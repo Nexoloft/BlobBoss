@@ -1,10 +1,77 @@
 import { BlobCharacter } from './blob.js';
 
-const blob = new BlobCharacter(document.getElementById('blob-container'));
+const { invoke } = window.__TAURI__.core;
+const { listen } = window.__TAURI__.event;
+const { getCurrentWindow } = window.__TAURI__.window;
 
-// Temporary test sequence — remove in Task 4
-blob.setStage(1);
-setTimeout(() => blob.setStage(2), 2000);
-setTimeout(() => blob.setStage(3), 4000);
-setTimeout(() => blob.setStage(4), 6000);
-setTimeout(() => { blob.setStage(0); blob.setStreak(5); blob.celebrate(); }, 8000);
+const blob = new BlobCharacter(document.getElementById('blob-container'));
+const message = document.getElementById('message');
+const actions = document.getElementById('actions');
+const streakDisplay = document.getElementById('streak-display');
+
+const STAGE_MESSAGES = [
+  '',
+  'Hey! Time to move!',
+  'Come on, get up! Your body needs this!',
+  'I\'m getting ANGRY! DO YOUR EXERCISES!',
+  'I WILL NOT BE IGNORED!!!'
+];
+
+let currentExercises = '30 pushups + 30 squats';
+
+async function init() {
+  const state = await invoke('get_state');
+  blob.setStreak(state.streak);
+  currentExercises = state.settings.exercises;
+  updateStreakDisplay(state.streak);
+
+  if (state.stage > 0) {
+    showReminder(state.stage);
+  }
+}
+
+function updateStreakDisplay(streak) {
+  streakDisplay.textContent = streak > 0 ? `${streak} today` : '';
+}
+
+function showReminder(stage) {
+  blob.setStage(stage);
+  message.innerHTML = `<div>${STAGE_MESSAGES[stage]}</div><div style="margin-top:8px;font-size:0.9rem;color:#555;">${currentExercises}</div>`;
+  actions.innerHTML = `
+    <button class="btn btn-primary" id="btn-done">I did them!</button>
+    <button class="btn btn-secondary" id="btn-skip">Skip</button>
+  `;
+  document.getElementById('btn-done').onclick = () => handleDismiss(true);
+  document.getElementById('btn-skip').onclick = () => handleDismiss(false);
+
+  const win = getCurrentWindow();
+  win.show();
+  win.setFocus();
+}
+
+async function handleDismiss(didExercise) {
+  if (didExercise) {
+    blob.celebrate();
+  } else {
+    blob.lookSad();
+  }
+
+  await invoke('dismiss', { didExercise });
+
+  setTimeout(async () => {
+    const state = await invoke('get_state');
+    blob.setStreak(state.streak);
+    updateStreakDisplay(state.streak);
+    blob.setStage(0);
+    message.textContent = '';
+    actions.innerHTML = '';
+    const win = getCurrentWindow();
+    win.hide();
+  }, 1500);
+}
+
+listen('escalation-stage', (event) => {
+  showReminder(event.payload);
+});
+
+init();
