@@ -9,7 +9,7 @@ use tauri::{
 };
 
 #[tauri::command]
-fn dismiss(app: tauri::AppHandle, did_exercise: bool) {
+fn dismiss(app: tauri::AppHandle, did_exercise: bool, pushups: u32, squats: u32) {
     let state = app.state::<AppState>();
     *state.current_stage.lock().unwrap() = 0;
 
@@ -20,9 +20,33 @@ fn dismiss(app: tauri::AppHandle, did_exercise: bool) {
 
         if *date != today {
             *streak = 0;
-            *date = today;
+            *date = today.clone();
         }
         *streak += 1;
+
+        let mut stats = state.lifetime_stats.lock().unwrap();
+        stats.total_pushups += pushups as u64;
+        stats.total_squats += squats as u64;
+        stats.total_sessions += 1;
+
+        if *streak > stats.longest_streak {
+            stats.longest_streak = *streak;
+        }
+
+        if !stats.active_dates.contains(&today) {
+            stats.active_dates.push(today.clone());
+            stats.days_active = stats.active_dates.len() as u32;
+        }
+
+        if stats.first_active_date.is_empty() {
+            stats.first_active_date = today;
+        }
+    }
+
+    // Reset timer
+    {
+        let settings = state.settings.lock().unwrap();
+        *state.timer_remaining_secs.lock().unwrap() = settings.interval_minutes as u64 * 60;
     }
 
     state.save(&app);
@@ -38,11 +62,15 @@ fn get_state(app: tauri::AppHandle) -> serde_json::Value {
     let streak = *state.streak.lock().unwrap();
     let settings = state.settings.lock().unwrap().clone();
     let stage = *state.current_stage.lock().unwrap();
+    let stats = state.lifetime_stats.lock().unwrap().clone();
+    let remaining = *state.timer_remaining_secs.lock().unwrap();
 
     serde_json::json!({
         "streak": streak,
         "stage": stage,
-        "settings": settings
+        "settings": settings,
+        "lifetime_stats": stats,
+        "timer_remaining_secs": remaining
     })
 }
 
@@ -53,6 +81,13 @@ fn update_settings(app: tauri::AppHandle, new_settings: Settings) {
     state.save(&app);
 }
 
+#[tauri::command]
+fn get_timer_remaining(app: tauri::AppHandle) -> u64 {
+    let state = app.state::<AppState>();
+    let val = *state.timer_remaining_secs.lock().unwrap();
+    val
+}
+
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_store::Builder::default().build())
@@ -61,15 +96,16 @@ pub fn run() {
             Some(vec!["--minimized"]),
         ))
         .plugin(tauri_plugin_notification::init())
-        .invoke_handler(tauri::generate_handler![dismiss, get_state, update_settings])
+        .invoke_handler(tauri::generate_handler![dismiss, get_state, update_settings, get_timer_remaining])
         .setup(|app| {
             let state = AppState::load(&app.handle());
             app.manage(state);
 
+            let dashboard_item = MenuItem::with_id(app, "dashboard", "Dashboard", true, None::<&str>)?;
             let settings_item = MenuItem::with_id(app, "settings", "Settings", true, None::<&str>)?;
             let reset_item = MenuItem::with_id(app, "reset", "Reset Streak", true, None::<&str>)?;
             let quit_item = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
-            let menu = Menu::with_items(app, &[&settings_item, &reset_item, &quit_item])?;
+            let menu = Menu::with_items(app, &[&dashboard_item, &settings_item, &reset_item, &quit_item])?;
 
             TrayIconBuilder::new()
                 .icon(app.default_window_icon().unwrap().clone())
@@ -82,6 +118,23 @@ pub fn run() {
                         *state.streak.lock().unwrap() = 0;
                         state.save(app);
                     }
+                    "dashboard" => {
+                        if let Some(w) = app.get_webview_window("dashboard") {
+                            let _ = w.show();
+                            let _ = w.set_focus();
+                        } else {
+                            let _ = tauri::WebviewWindowBuilder::new(
+                                app,
+                                "dashboard",
+                                tauri::WebviewUrl::App("dashboard.html".into()),
+                            )
+                            .title("AntiOsteo Dashboard")
+                            .inner_size(420.0, 520.0)
+                            .center()
+                            .resizable(true)
+                            .build();
+                        }
+                    }
                     "settings" => {
                         if let Some(w) = app.get_webview_window("settings") {
                             let _ = w.show();
@@ -93,7 +146,7 @@ pub fn run() {
                                 tauri::WebviewUrl::App("settings.html".into()),
                             )
                             .title("AntiOsteo Settings")
-                            .inner_size(350.0, 300.0)
+                            .inner_size(380.0, 480.0)
                             .center()
                             .resizable(false)
                             .build();
@@ -101,9 +154,51 @@ pub fn run() {
                     }
                     _ => {}
                 })
+                .on_tray_icon_event(|tray, event| {
+                    if let tauri::tray::TrayIconEvent::Click { button: tauri::tray::MouseButton::Left, .. } = event {
+                        let app = tray.app_handle();
+                        if let Some(w) = app.get_webview_window("dashboard") {
+                            let _ = w.show();
+                            let _ = w.set_focus();
+                        } else {
+                            let _ = tauri::WebviewWindowBuilder::new(
+                                app,
+                                "dashboard",
+                                tauri::WebviewUrl::App("dashboard.html".into()),
+                            )
+                            .title("AntiOsteo Dashboard")
+                            .inner_size(420.0, 520.0)
+                            .center()
+                            .resizable(true)
+                            .build();
+                        }
+                    }
+                })
                 .build(app)?;
 
             timer::start_timer(app.handle().clone());
+
+            // Show widget if enabled
+            let show_widget = {
+                let state = app.state::<AppState>();
+                let val = state.settings.lock().unwrap().show_widget;
+                val
+            };
+            if show_widget {
+                let _ = tauri::WebviewWindowBuilder::new(
+                    app,
+                    "widget",
+                    tauri::WebviewUrl::App("widget.html".into()),
+                )
+                .title("")
+                .inner_size(160.0, 60.0)
+                .decorations(false)
+                .always_on_top(true)
+                .skip_taskbar(true)
+                .transparent(true)
+                .resizable(false)
+                .build();
+            }
 
             Ok(())
         })

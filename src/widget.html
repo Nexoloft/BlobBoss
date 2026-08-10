@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AntiOsteo Widget</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { background: transparent; overflow: hidden; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      -webkit-app-region: drag;
+    }
+    #widget {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.92);
+      border-radius: 14px;
+      padding: 8px 14px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+      cursor: pointer;
+      -webkit-app-region: drag;
+    }
+    #widget:hover {
+      background: rgba(255, 255, 255, 1);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.16);
+    }
+    .widget-blob {
+      width: 32px;
+      height: 32px;
+    }
+    .widget-blob svg {
+      width: 100%;
+      height: 100%;
+      animation: mini-wobble 3s ease-in-out infinite;
+    }
+    @keyframes mini-wobble {
+      0%, 100% { transform: rotate(0deg); }
+      50% { transform: rotate(3deg); }
+    }
+    .widget-info {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+    .widget-timer {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #4caf50;
+    }
+    .widget-streak {
+      font-size: 0.65rem;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+  </style>
+</head>
+<body>
+  <div id="widget">
+    <div class="widget-blob" id="mini-blob"></div>
+    <div class="widget-info">
+      <div class="widget-timer" id="w-timer">--:--</div>
+      <div class="widget-streak" id="w-streak">0 today</div>
+    </div>
+  </div>
+  <script type="module">
+    const { invoke } = window.__TAURI__.core;
+    const { listen } = window.__TAURI__.event;
+
+    document.getElementById('mini-blob').innerHTML = `
+      <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient id="g" cx="50%" cy="40%">
+            <stop offset="0%" stop-color="#a8e6a0"/>
+            <stop offset="100%" stop-color="#4caf50"/>
+          </radialGradient>
+        </defs>
+        <path d="M100,30 C140,30 170,60 170,100 C170,140 140,170 100,170 C60,170 30,140 30,100 C30,60 60,30 100,30 Z" fill="url(#g)"/>
+        <circle cx="75" cy="90" r="8" fill="#2d2d2d"/>
+        <circle cx="125" cy="90" r="8" fill="#2d2d2d"/>
+        <ellipse cx="72" cy="87" rx="3" ry="3" fill="white" opacity="0.8"/>
+        <ellipse cx="122" cy="87" rx="3" ry="3" fill="white" opacity="0.8"/>
+        <path d="M85,125 Q100,140 115,125" stroke="#2d2d2d" stroke-width="3" fill="none" stroke-linecap="round"/>
+      </svg>
+    `;
+
+    function formatTime(secs) {
+      const m = Math.floor(secs / 60);
+      const s = secs % 60;
+      return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    }
+
+    async function init() {
+      const state = await invoke('get_state');
+      document.getElementById('w-timer').textContent = formatTime(state.timer_remaining_secs);
+      document.getElementById('w-streak').textContent = `${state.streak} today`;
+    }
+
+    listen('timer-tick', (event) => {
+      document.getElementById('w-timer').textContent = formatTime(event.payload);
+    });
+
+    // Click opens dashboard
+    document.getElementById('widget').addEventListener('dblclick', async () => {
+      const { invoke: inv } = window.__TAURI__.core;
+      // We just reload state - the tray left-click handler opens dashboard
+      // For now just refresh
+      init();
+    });
+
+    init();
+  </script>
+</body>
+</html>

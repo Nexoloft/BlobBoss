@@ -18,11 +18,15 @@ const STAGE_MESSAGES = [
 ];
 
 let currentExercises = '30 pushups + 30 squats';
+let defaultPushups = 30;
+let defaultSquats = 30;
 
 async function init() {
   const state = await invoke('get_state');
   blob.setStreak(state.streak);
   currentExercises = state.settings.exercises;
+  defaultPushups = state.settings.default_pushups;
+  defaultSquats = state.settings.default_squats;
   updateStreakDisplay(state.streak);
 
   if (state.stage > 0) {
@@ -43,8 +47,20 @@ function showReminder(stage) {
   }
   message.innerHTML = `<div>${STAGE_MESSAGES[stage]}</div><div style="margin-top:8px;font-size:0.9rem;color:#555;">${currentExercises}</div>`;
   actions.innerHTML = `
-    <button class="btn btn-primary" id="btn-done">I did them!</button>
-    <button class="btn btn-secondary" id="btn-skip">Skip</button>
+    <div class="rep-inputs">
+      <div class="rep-field">
+        <label>Pushups</label>
+        <input type="number" id="input-pushups" value="${defaultPushups}" min="0" max="999">
+      </div>
+      <div class="rep-field">
+        <label>Squats</label>
+        <input type="number" id="input-squats" value="${defaultSquats}" min="0" max="999">
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" id="btn-done">I did them!</button>
+      <button class="btn btn-secondary" id="btn-skip">Skip</button>
+    </div>
   `;
   document.getElementById('btn-done').onclick = () => handleDismiss(true);
   document.getElementById('btn-skip').onclick = () => handleDismiss(false);
@@ -55,13 +71,16 @@ function showReminder(stage) {
 }
 
 async function handleDismiss(didExercise) {
+  const pushups = didExercise ? parseInt(document.getElementById('input-pushups').value, 10) || 0 : 0;
+  const squats = didExercise ? parseInt(document.getElementById('input-squats').value, 10) || 0 : 0;
+
   if (didExercise) {
     blob.celebrate();
   } else {
     blob.lookSad();
   }
 
-  await invoke('dismiss', { didExercise });
+  await invoke('dismiss', { didExercise, pushups, squats });
 
   setTimeout(async () => {
     const state = await invoke('get_state');

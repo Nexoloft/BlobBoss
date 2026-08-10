@@ -7,22 +7,40 @@ body {
 #settings-app {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
-h2 { color: #333; margin-bottom: 8px; }
+h2 { color: #333; margin-bottom: 4px; }
+.section-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #999;
+  margin-top: 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #eee;
+}
 .field {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
-.field label { font-size: 0.9rem; color: #555; }
+.field label { font-size: 0.85rem; color: #555; }
 .field input[type="number"],
-.field input[type="text"] {
+.field input[type="text"],
+.field select {
   padding: 8px 12px;
   border: 1px solid #ddd;
   border-radius: 8px;
   font-size: 1rem;
 }
+.field input[type="range"] {
+  width: 100%;
+}
+.field-row {
+  display: flex;
+  gap: 12px;
+}
+.field-row .field { flex: 1; }
 .checkbox-field {
   flex-direction: row;
   align-items: center;
@@ -35,6 +53,7 @@ h2 { color: #333; margin-bottom: 8px; }
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
+  margin-top: 8px;
 }
 .btn-primary { background: #4caf50; color: white; }
 .btn:active { transform: scale(0.95); }

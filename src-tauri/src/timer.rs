@@ -11,12 +11,12 @@ fn resize_for_stage(app: &AppHandle, stage: u8) {
 
         match stage {
             1 => {
-                let _ = window.set_size(tauri::Size::Logical(tauri::LogicalSize::new(300.0, 300.0)));
+                let _ = window.set_size(tauri::Size::Logical(tauri::LogicalSize::new(300.0, 350.0)));
                 let _ = window.set_always_on_top(true);
                 let _ = window.center();
             }
             2 => {
-                let _ = window.set_size(tauri::Size::Logical(tauri::LogicalSize::new(350.0, 350.0)));
+                let _ = window.set_size(tauri::Size::Logical(tauri::LogicalSize::new(350.0, 400.0)));
                 let _ = window.center();
             }
             3 => {
@@ -40,37 +40,57 @@ fn resize_for_stage(app: &AppHandle, stage: u8) {
 pub fn start_timer(app: AppHandle) {
     tauri::async_runtime::spawn(async move {
         loop {
-            let interval = {
-                let state = app.state::<AppState>();
-                let settings = state.settings.lock().unwrap();
-                settings.interval_minutes
-            };
-
-            tokio::time::sleep(Duration::from_secs(interval as u64 * 60)).await;
+            // Tick every second to update countdown
+            tokio::time::sleep(Duration::from_secs(1)).await;
 
             let is_running = {
                 let state = app.state::<AppState>();
-                let guard = state.timer_running.lock().unwrap();
-                *guard
+                let val = *state.timer_running.lock().unwrap();
+                val
             };
 
             if !is_running {
                 continue;
             }
 
-            {
+            let remaining = {
                 let state = app.state::<AppState>();
-                *state.current_stage.lock().unwrap() = 1;
-            }
-            let _ = app.notification()
-                .builder()
-                .title("AntiOsteo")
-                .body("Hey! Time for your exercises!")
-                .show();
-            let _ = app.emit("escalation-stage", 1u8);
-            resize_for_stage(&app, 1);
+                let mut rem = state.timer_remaining_secs.lock().unwrap();
+                if *rem > 0 {
+                    *rem -= 1;
+                }
+                *rem
+            };
 
-            start_escalation(app.clone()).await;
+            // Emit tick for widget updates
+            let _ = app.emit("timer-tick", remaining);
+
+            if remaining == 0 {
+                // Timer fired — start escalation
+                {
+                    let state = app.state::<AppState>();
+                    *state.current_stage.lock().unwrap() = 1;
+                }
+
+                let _ = app.notification()
+                    .builder()
+                    .title("AntiOsteo")
+                    .body("Hey! Time for your exercises!")
+                    .show();
+                let _ = app.emit("escalation-stage", 1u8);
+                resize_for_stage(&app, 1);
+
+                start_escalation(app.clone()).await;
+
+                // After escalation ends (dismissed or fully escalated), reset timer
+                let interval = {
+                    let state = app.state::<AppState>();
+                    let settings = state.settings.lock().unwrap();
+                    settings.interval_minutes
+                };
+                let state = app.state::<AppState>();
+                *state.timer_remaining_secs.lock().unwrap() = interval as u64 * 60;
+            }
         }
     });
 }
@@ -83,8 +103,8 @@ async fn start_escalation(app: AppHandle) {
 
         let current = {
             let state = app.state::<AppState>();
-            let guard = state.current_stage.lock().unwrap();
-            *guard
+            let val = *state.current_stage.lock().unwrap();
+            val
         };
 
         if current == 0 {

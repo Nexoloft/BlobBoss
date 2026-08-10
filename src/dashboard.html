@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AntiOsteo Dashboard</title>
+  <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+  <div id="dashboard">
+    <div class="header">
+      <div class="blob-mini" id="blob-mini"></div>
+      <div class="header-info">
+        <h1>AntiOsteo</h1>
+        <div id="timer-display" class="timer">Next reminder in --:--</div>
+      </div>
+    </div>
+
+    <div class="section today">
+      <h2>Today</h2>
+      <div class="stat-row">
+        <div class="stat-card">
+          <div class="stat-value" id="today-sessions">0</div>
+          <div class="stat-label">Sessions</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="today-streak">0</div>
+          <div class="stat-label">Streak</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section lifetime">
+      <h2>Lifetime Stats</h2>
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="stat-value" id="total-pushups">0</div>
+          <div class="stat-label">Total Pushups</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="total-squats">0</div>
+          <div class="stat-label">Total Squats</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="total-sessions">0</div>
+          <div class="stat-label">Total Sessions</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="longest-streak">0</div>
+          <div class="stat-label">Longest Streak</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="days-active">0</div>
+          <div class="stat-label">Days Active</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="consistency">0%</div>
+          <div class="stat-label">Consistency</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section achievements" id="achievements-section">
+      <h2>Achievements</h2>
+      <div id="achievements-list" class="achievements-list"></div>
+    </div>
+  </div>
+  <script type="module" src="dashboard.js"></script>
+</body>
+</html>
