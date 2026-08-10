@@ -24,6 +24,10 @@ fn dismiss(app: tauri::AppHandle, did_exercise: bool) {
         }
         *streak += 1;
     }
+
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.set_size(tauri::Size::Logical(tauri::LogicalSize::new(300.0, 300.0)));
+    }
 }
 
 #[tauri::command]
