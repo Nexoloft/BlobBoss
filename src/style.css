@@ -1,13 +1,16 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
+
 body {
   font-family: 'Segoe UI', sans-serif;
   overflow: hidden;
-  background: transparent;
+  background: rgba(255, 255, 255, 0.95);
   display: flex;
   align-items: center;
   justify-content: center;
   height: 100vh;
+  border-radius: 20px;
 }
+
 #app {
   display: flex;
   flex-direction: column;
@@ -16,4 +19,139 @@ body {
   gap: 16px;
   width: 100%;
   height: 100%;
+  padding: 20px;
+}
+
+#blob-container {
+  width: 60%;
+  max-width: 200px;
+  aspect-ratio: 1;
+}
+
+#blob-svg {
+  width: 100%;
+  height: 100%;
+}
+
+#message {
+  font-size: 1.1rem;
+  font-weight: 600;
+  text-align: center;
+  color: #333;
+}
+
+#actions {
+  display: flex;
+  gap: 12px;
+}
+
+.btn {
+  border: none;
+  border-radius: 12px;
+  padding: 10px 24px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+
+.btn:active { transform: scale(0.95); }
+
+.btn-primary {
+  background: #4caf50;
+  color: white;
+}
+
+.btn-secondary {
+  background: #eee;
+  color: #666;
+  font-size: 0.85rem;
+}
+
+/* Stage animations */
+.stage-1 {
+  animation: gentle-wobble 2s ease-in-out infinite;
+}
+
+.stage-2 {
+  animation: bounce 0.6s ease-in-out infinite;
+}
+
+.stage-3 {
+  animation: vibrate 0.1s linear infinite;
+}
+
+.stage-4 {
+  animation: vibrate 0.05s linear infinite, grow-huge 0.5s forwards;
+}
+
+@keyframes gentle-wobble {
+  0%, 100% { transform: rotate(0deg) scale(1); }
+  25% { transform: rotate(-3deg) scale(1.02); }
+  75% { transform: rotate(3deg) scale(1.02); }
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-15px); }
+}
+
+@keyframes vibrate {
+  0% { transform: translate(0, 0); }
+  25% { transform: translate(-2px, 2px); }
+  50% { transform: translate(2px, -2px); }
+  75% { transform: translate(-2px, -1px); }
+  100% { transform: translate(1px, 2px); }
+}
+
+@keyframes grow-huge {
+  to { transform: scale(1.5); }
+}
+
+/* Streak effects */
+.streak-sparkle #blob-face circle {
+  animation: sparkle 1s ease-in-out infinite alternate;
+}
+
+@keyframes sparkle {
+  to { filter: brightness(1.3) drop-shadow(0 0 4px gold); }
+}
+
+.streak-rainbow #blob-body {
+  animation: rainbow-aura 3s linear infinite;
+}
+
+@keyframes rainbow-aura {
+  0% { filter: drop-shadow(0 0 8px #ff0000); }
+  33% { filter: drop-shadow(0 0 8px #00ff00); }
+  66% { filter: drop-shadow(0 0 8px #0000ff); }
+  100% { filter: drop-shadow(0 0 8px #ff0000); }
+}
+
+/* Celebrate */
+.celebrate {
+  animation: celebrate-bounce 0.3s ease-in-out 5;
+}
+
+@keyframes celebrate-bounce {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  50% { transform: scale(1.2) rotate(5deg); }
+}
+
+/* Sad */
+.sad {
+  animation: shrink-sad 0.5s ease-in-out;
+}
+
+@keyframes shrink-sad {
+  50% { transform: scale(0.85); opacity: 0.7; }
+}
+
+/* Streak display */
+#streak-display {
+  font-size: 0.9rem;
+  color: #666;
+  position: absolute;
+  top: 10px;
+  right: 16px;
 }
