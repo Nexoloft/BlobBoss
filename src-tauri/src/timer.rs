@@ -1,5 +1,6 @@
 use std::time::Duration;
 use tauri::{AppHandle, Emitter, Manager};
+use tauri_plugin_notification::NotificationExt;
 
 use crate::state::AppState;
 
@@ -61,6 +62,11 @@ pub fn start_timer(app: AppHandle) {
                 let state = app.state::<AppState>();
                 *state.current_stage.lock().unwrap() = 1;
             }
+            let _ = app.notification()
+                .builder()
+                .title("AntiOsteo")
+                .body("Hey! Time for your exercises!")
+                .show();
             let _ = app.emit("escalation-stage", 1u8);
             resize_for_stage(&app, 1);
 
