@@ -110,7 +110,7 @@ pub fn run() {
             TrayIconBuilder::new()
                 .icon(app.default_window_icon().unwrap().clone())
                 .menu(&menu)
-                .tooltip("AntiOsteo - Exercise Reminder")
+                .tooltip("BlobBoss - Exercise Reminder")
                 .on_menu_event(|app, event| match event.id.as_ref() {
                     "quit" => app.exit(0),
                     "reset" => {
@@ -128,7 +128,7 @@ pub fn run() {
                                 "dashboard",
                                 tauri::WebviewUrl::App("dashboard.html".into()),
                             )
-                            .title("AntiOsteo Dashboard")
+                            .title("BlobBoss Dashboard")
                             .inner_size(420.0, 520.0)
                             .center()
                             .resizable(true)
@@ -145,7 +145,7 @@ pub fn run() {
                                 "settings",
                                 tauri::WebviewUrl::App("settings.html".into()),
                             )
-                            .title("AntiOsteo Settings")
+                            .title("BlobBoss Settings")
                             .inner_size(380.0, 480.0)
                             .center()
                             .resizable(false)
@@ -166,7 +166,7 @@ pub fn run() {
                                 "dashboard",
                                 tauri::WebviewUrl::App("dashboard.html".into()),
                             )
-                            .title("AntiOsteo Dashboard")
+                            .title("BlobBoss Dashboard")
                             .inner_size(420.0, 520.0)
                             .center()
                             .resizable(true)

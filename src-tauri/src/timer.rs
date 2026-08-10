@@ -74,7 +74,7 @@ pub fn start_timer(app: AppHandle) {
 
                 let _ = app.notification()
                     .builder()
-                    .title("AntiOsteo")
+                    .title("BlobBoss")
                     .body("Hey! Time for your exercises!")
                     .show();
                 let _ = app.emit("escalation-stage", 1u8);

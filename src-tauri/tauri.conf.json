@@ -1,7 +1,7 @@
 {
-  "productName": "AntiOsteo",
+  "productName": "BlobBoss",
   "version": "0.1.0",
-  "identifier": "com.antiosteo.app",
+  "identifier": "com.blobboss.app",
   "build": {
     "frontendDist": "../src",
     "devUrl": "http://localhost:1420",
@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "AntiOsteo",
+        "title": "BlobBoss",
         "width": 300,
         "height": 300,
         "visible": false,

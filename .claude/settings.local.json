@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "WebFetch(domain:v2.tauri.app)",
-      "Bash(cargo build *)"
+      "Bash(cargo build *)",
+      "Bash(git commit -m ' *)",
+      "Bash(npx tauri *)"
     ]
   }
 }
