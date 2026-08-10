@@ -1,0 +1,40 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Segoe UI', sans-serif;
+  padding: 24px;
+  background: #fafafa;
+}
+#settings-app {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+h2 { color: #333; margin-bottom: 8px; }
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.field label { font-size: 0.9rem; color: #555; }
+.field input[type="number"],
+.field input[type="text"] {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 1rem;
+}
+.checkbox-field {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+.btn {
+  border: none;
+  border-radius: 12px;
+  padding: 10px 24px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.btn-primary { background: #4caf50; color: white; }
+.btn:active { transform: scale(0.95); }

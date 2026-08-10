@@ -25,6 +25,8 @@ fn dismiss(app: tauri::AppHandle, did_exercise: bool) {
         *streak += 1;
     }
 
+    state.save(&app);
+
     if let Some(window) = app.get_webview_window("main") {
         let _ = window.set_size(tauri::Size::Logical(tauri::LogicalSize::new(300.0, 300.0)));
     }
@@ -48,6 +50,7 @@ fn get_state(app: tauri::AppHandle) -> serde_json::Value {
 fn update_settings(app: tauri::AppHandle, new_settings: Settings) {
     let state = app.state::<AppState>();
     *state.settings.lock().unwrap() = new_settings;
+    state.save(&app);
 }
 
 pub fn run() {
@@ -57,9 +60,12 @@ pub fn run() {
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
             Some(vec!["--minimized"]),
         ))
-        .manage(AppState::default())
+        .plugin(tauri_plugin_notification::init())
         .invoke_handler(tauri::generate_handler![dismiss, get_state, update_settings])
         .setup(|app| {
+            let state = AppState::load(&app.handle());
+            app.manage(state);
+
             let settings_item = MenuItem::with_id(app, "settings", "Settings", true, None::<&str>)?;
             let reset_item = MenuItem::with_id(app, "reset", "Reset Streak", true, None::<&str>)?;
             let quit_item = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
@@ -74,11 +80,23 @@ pub fn run() {
                     "reset" => {
                         let state = app.state::<AppState>();
                         *state.streak.lock().unwrap() = 0;
+                        state.save(app);
                     }
                     "settings" => {
-                        if let Some(w) = app.get_webview_window("main") {
+                        if let Some(w) = app.get_webview_window("settings") {
                             let _ = w.show();
                             let _ = w.set_focus();
+                        } else {
+                            let _ = tauri::WebviewWindowBuilder::new(
+                                app,
+                                "settings",
+                                tauri::WebviewUrl::App("settings.html".into()),
+                            )
+                            .title("AntiOsteo Settings")
+                            .inner_size(350.0, 300.0)
+                            .center()
+                            .resizable(false)
+                            .build();
                         }
                     }
                     _ => {}
