@@ -36,6 +36,11 @@ function updateStreakDisplay(streak) {
 
 function showReminder(stage) {
   blob.setStage(stage);
+  if (stage === 4) {
+    document.body.classList.add('stage-4-active');
+  } else {
+    document.body.classList.remove('stage-4-active');
+  }
   message.innerHTML = `<div>${STAGE_MESSAGES[stage]}</div><div style="margin-top:8px;font-size:0.9rem;color:#555;">${currentExercises}</div>`;
   actions.innerHTML = `
     <button class="btn btn-primary" id="btn-done">I did them!</button>
@@ -63,6 +68,7 @@ async function handleDismiss(didExercise) {
     blob.setStreak(state.streak);
     updateStreakDisplay(state.streak);
     blob.setStage(0);
+    document.body.classList.remove('stage-4-active');
     message.textContent = '';
     actions.innerHTML = '';
     const win = getCurrentWindow();
