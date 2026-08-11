@@ -5,7 +5,7 @@ use state::{AppState, Settings};
 use tauri::{
     menu::{Menu, MenuItem},
     tray::TrayIconBuilder,
-    Manager,
+    Emitter, Manager,
 };
 
 #[tauri::command]
@@ -52,8 +52,58 @@ fn dismiss(app: tauri::AppHandle, did_exercise: bool, pushups: u32, squats: u32)
     state.save(&app);
 
     if let Some(window) = app.get_webview_window("main") {
-        let _ = window.set_size(tauri::Size::Logical(tauri::LogicalSize::new(300.0, 300.0)));
+        let _ = window.set_decorations(true);
+        let _ = window.set_always_on_top(false);
+        let _ = window.set_size(tauri::Size::Logical(tauri::LogicalSize::new(550.0, 600.0)));
     }
+}
+
+#[tauri::command]
+fn snooze(app: tauri::AppHandle, minutes: u32) {
+    let current_stage = {
+        let state = app.state::<AppState>();
+        let stage = *state.current_stage.lock().unwrap();
+        *state.current_stage.lock().unwrap() = 0;
+        stage
+    };
+
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.hide();
+    }
+
+    let next_stage = (current_stage + 1).min(4);
+    let delay_secs = (minutes as u64) * 60;
+
+    tauri::async_runtime::spawn(async move {
+        tokio::time::sleep(std::time::Duration::from_secs(delay_secs)).await;
+
+        let state = app.state::<AppState>();
+        let current = *state.current_stage.lock().unwrap();
+        if current != 0 {
+            return;
+        }
+        *state.current_stage.lock().unwrap() = next_stage;
+        drop(state);
+
+        let _ = app.emit("escalation-stage", next_stage);
+        timer::resize_for_stage(&app, next_stage);
+    });
+}
+
+#[tauri::command]
+fn start_doing(app: tauri::AppHandle) {
+    let state = app.state::<AppState>();
+    *state.doing_exercise.lock().unwrap() = true;
+    *state.current_stage.lock().unwrap() = 0;
+}
+
+#[tauri::command]
+fn finish_doing(app: tauri::AppHandle, pushups: u32, squats: u32) {
+    {
+        let state = app.state::<AppState>();
+        *state.doing_exercise.lock().unwrap() = false;
+    }
+    dismiss(app, true, pushups, squats);
 }
 
 #[tauri::command]
@@ -96,7 +146,7 @@ pub fn run() {
             Some(vec!["--minimized"]),
         ))
         .plugin(tauri_plugin_notification::init())
-        .invoke_handler(tauri::generate_handler![dismiss, get_state, update_settings, get_timer_remaining])
+        .invoke_handler(tauri::generate_handler![dismiss, get_state, update_settings, get_timer_remaining, snooze, start_doing, finish_doing])
         .setup(|app| {
             let state = AppState::load(&app.handle());
             app.manage(state);

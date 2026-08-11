@@ -50,6 +50,7 @@ pub struct AppState {
     pub current_stage: Mutex<u8>,
     pub lifetime_stats: Mutex<LifetimeStats>,
     pub timer_remaining_secs: Mutex<u64>,
+    pub doing_exercise: Mutex<bool>,
 }
 
 impl Default for AppState {
@@ -62,6 +63,7 @@ impl Default for AppState {
             current_stage: Mutex::new(0),
             lifetime_stats: Mutex::new(LifetimeStats::default()),
             timer_remaining_secs: Mutex::new(0),
+            doing_exercise: Mutex::new(false),
         }
     }
 }
@@ -102,6 +104,7 @@ impl AppState {
             current_stage: Mutex::new(0),
             lifetime_stats: Mutex::new(lifetime_stats),
             timer_remaining_secs: Mutex::new(interval as u64 * 60),
+            doing_exercise: Mutex::new(false),
         }
     }
 

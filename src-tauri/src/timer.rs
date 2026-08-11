@@ -4,26 +4,30 @@ use tauri_plugin_notification::NotificationExt;
 
 use crate::state::AppState;
 
-fn resize_for_stage(app: &AppHandle, stage: u8) {
+pub fn resize_for_stage(app: &AppHandle, stage: u8) {
     if let Some(window) = app.get_webview_window("main") {
         let _ = window.show();
         let _ = window.set_focus();
 
         match stage {
             1 => {
-                let _ = window.set_size(tauri::Size::Logical(tauri::LogicalSize::new(300.0, 350.0)));
-                let _ = window.set_always_on_top(true);
+                let _ = window.set_size(tauri::Size::Logical(tauri::LogicalSize::new(550.0, 600.0)));
+                let _ = window.set_always_on_top(false);
+                let _ = window.set_decorations(true);
                 let _ = window.center();
             }
             2 => {
-                let _ = window.set_size(tauri::Size::Logical(tauri::LogicalSize::new(350.0, 400.0)));
+                let _ = window.set_size(tauri::Size::Logical(tauri::LogicalSize::new(550.0, 600.0)));
+                let _ = window.set_always_on_top(true);
                 let _ = window.center();
             }
             3 => {
-                let _ = window.set_size(tauri::Size::Logical(tauri::LogicalSize::new(500.0, 500.0)));
+                let _ = window.set_size(tauri::Size::Logical(tauri::LogicalSize::new(650.0, 700.0)));
+                let _ = window.set_always_on_top(true);
                 let _ = window.center();
             }
             4 => {
+                let _ = window.set_decorations(false);
                 if let Ok(Some(monitor)) = window.current_monitor() {
                     let size = monitor.size();
                     let w = size.width as f64 * 0.9;
@@ -40,7 +44,6 @@ fn resize_for_stage(app: &AppHandle, stage: u8) {
 pub fn start_timer(app: AppHandle) {
     tauri::async_runtime::spawn(async move {
         loop {
-            // Tick every second to update countdown
             tokio::time::sleep(Duration::from_secs(1)).await;
 
             let is_running = {
@@ -62,27 +65,50 @@ pub fn start_timer(app: AppHandle) {
                 *rem
             };
 
-            // Emit tick for widget updates
             let _ = app.emit("timer-tick", remaining);
 
             if remaining == 0 {
-                // Timer fired — start escalation
+                // Don't fire while user is actively exercising
                 {
                     let state = app.state::<AppState>();
-                    *state.current_stage.lock().unwrap() = 1;
+                    if *state.doing_exercise.lock().unwrap() {
+                        let settings = state.settings.lock().unwrap();
+                        *state.timer_remaining_secs.lock().unwrap() = settings.interval_minutes as u64 * 60;
+                        continue;
+                    }
                 }
 
+                // Phase 1: OS notification only (no popup)
                 let _ = app.notification()
                     .builder()
                     .title("BlobBoss")
                     .body("Hey! Time for your exercises!")
                     .show();
+
+                // Wait 60 seconds before showing popup
+                tokio::time::sleep(Duration::from_secs(60)).await;
+
+                // Check if dismissed during the 60s wait
+                {
+                    let state = app.state::<AppState>();
+                    if *state.doing_exercise.lock().unwrap() {
+                        let settings = state.settings.lock().unwrap();
+                        *state.timer_remaining_secs.lock().unwrap() = settings.interval_minutes as u64 * 60;
+                        continue;
+                    }
+                }
+
+                // Phase 2: Show popup at stage 1
+                {
+                    let state = app.state::<AppState>();
+                    *state.current_stage.lock().unwrap() = 1;
+                }
                 let _ = app.emit("escalation-stage", 1u8);
                 resize_for_stage(&app, 1);
 
                 start_escalation(app.clone()).await;
 
-                // After escalation ends (dismissed or fully escalated), reset timer
+                // After escalation ends, reset timer
                 let interval = {
                     let state = app.state::<AppState>();
                     let settings = state.settings.lock().unwrap();
